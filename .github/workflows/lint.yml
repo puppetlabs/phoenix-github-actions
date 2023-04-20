@@ -20,4 +20,4 @@ jobs:
         uses: "ibiqlik/action-yamllint@v3"
         with:
           file_or_dir: ".github/"
-          config_file: ".yamllint"
+          config_file: ".yamllint.yml"
