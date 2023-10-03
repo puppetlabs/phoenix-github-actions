@@ -8,7 +8,7 @@ jobs:
     name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.ruby }} on ${{ matrix.os_type }}
     strategy:
       matrix:
-        os: ['ubuntu-20.04', 'macos-11', 'windows-2019']
+        os: ['ubuntu-20.04', 'macos-12', 'windows-2019']
         puppet_version: ['7', '8']
         include:
           - puppet_version: '7'
@@ -20,7 +20,7 @@ jobs:
             os_type: 'Linux'
             env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
-          - os: 'macos-11'
+          - os: 'macos-12'
             os_type: 'macOS'
             env_set_cmd: 'export '
             gem_file: 'puppet-latest-universal-darwin.gem'
