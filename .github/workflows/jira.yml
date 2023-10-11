@@ -1,0 +1,70 @@
+# This is a reusable workflow[1] to export a github issue to JIRA ticket in
+# response to a label being applied to the issue[2].
+#
+# [1] https://docs.github.com/en/actions/using-workflows/reusing-workflows
+# [2] https://docs.github.com/en/actions/managing-issues-and-pull-requests/commenting-on-an-issue-when-a-label-is-added
+
+on:
+  workflow_call:
+    inputs:
+      jira-project:
+        description: The Jira project in which issues should be created.
+        required: true
+        type: string
+      jira-base-url:
+        description: The base URL for the Jira instance in which to create issues, e.g. https://jira.example.com
+        required: true
+        type: string
+      jira-user-email:
+        description: The email address of the Jira user, e.g. user@example.com
+        required: true
+        type: string
+    secrets:
+      jira-api-token:
+        description: An API token needed to create issues in Jira
+        required: true
+
+name: Export to JIRA
+
+jobs:
+  export:
+    if: ${{ github.repository_owner == 'puppetlabs' && github.event.label.name == 'triaged' }}
+    runs-on: ubuntu-latest
+    name: Export to JIRA
+    steps:
+      - name: Find Comment
+        uses: peter-evans/find-comment@v2
+        id: fc
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Migrated issue to '
+
+      - name: Login
+        if: steps.fc.outputs.comment-id == ''
+        uses: atlassian/gajira-login@v3
+        env:
+          JIRA_BASE_URL: ${{ inputs.jira-base-url }}
+          JIRA_USER_EMAIL: ${{ inputs.jira-user-email }}
+          JIRA_API_TOKEN: ${{ secrets.jira-api-token }}
+
+      - name: Create Issue
+        if: steps.fc.outputs.comment-id == ''
+        id: create
+        uses: atlassian/gajira-create@v3
+        with:
+          project: ${{ inputs.jira-project }}
+          issuetype: Bug
+          summary: ${{ github.event.issue.title }}
+          description: |
+            Originally reported in ${{ github.event.issue.html_url }}
+
+            ${{ github.event.issue.body }}
+
+      - name: Create Comment
+        if: steps.fc.outputs.comment-id == ''
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Migrated issue to [${{ steps.create.outputs.issue }}](${{ inputs.jira-base-url }}/browse/${{ steps.create.outputs.issue }})
