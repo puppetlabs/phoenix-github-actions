@@ -1,0 +1,57 @@
+---
+name: Import GitHub Issue from JIRA
+
+on:
+  workflow_call:
+    inputs:
+      jira-key:
+        description: The JIRA issue key, e.g. PUP-123
+        required: true
+        type: string
+      jira-base-url:
+        description: The base URL for the Jira instance in which to create issues, e.g. https://jira.example.com
+        required: true
+        type: string
+      jira-user-email:
+        description: The email address of the Jira user, e.g. user@example.com
+        required: true
+        type: string
+    secrets:
+      jira-api-token:
+        description: An API token needed to read issues in Jira
+        required: true
+
+jobs:
+  import:
+    if: ${{ github.repository_owner == 'puppetlabs' }}
+    runs-on: ubuntu-latest
+    name: Import from JIRA
+    steps:
+      - name: Checkout current branch of caller's repo
+        uses: actions/checkout@v4
+
+        # This is a hack to "reuse" the ruby script defined in the *this* reusable workflow
+        # I tried checking out *this* repo, but github seems to only clone `.github/workflows`
+        # but not files in `.github` or `.github/actions`.
+      - name: Get action script
+        run: |
+          gh api "${{ github.api_url }}/repos/puppetlabs/phoenix-github-actions/contents/.github/actions/import_from_jira.rb" -H "Accept: application/vnd.github.raw" > import_from_jira.rb
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Install Ruby 3.2
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Install Pandoc
+        run: |
+          sudo apt install pandoc
+
+      - run: |
+          ruby import_from_jira.rb ${{ inputs.jira-key }}
+        env:
+          JIRA_BASE_URL: ${{ inputs.jira-base-url }}
+          JIRA_USER_EMAIL: ${{ inputs.jira-user-email }}
+          JIRA_API_TOKEN: ${{ secrets.jira-api-token }}
+          GH_TOKEN: ${{ github.token }}
