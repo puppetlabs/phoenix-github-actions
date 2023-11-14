@@ -37,7 +37,7 @@ jobs:
         id: fc
         with:
           # Authenticates using GITHUB_TOKEN
-          issue-number: ${{ github.event.issue.number }}
+          issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
           comment-author: 'github-actions[bot]'
           body-includes: 'Migrated issue to '
 
@@ -46,7 +46,7 @@ jobs:
         uses: DamianReeves/write-file-action@v1.2
         with:
           path: body.md
-          contents: ${{ github.event.issue.body }}
+          contents: ${{ github.event.issue.body || github.event.pull_request.body || 'See GitHub for details'}}
 
       - name: Convert markdown to jira wiki format
         if: steps.fc.outputs.comment-id == ''
@@ -55,7 +55,7 @@ jobs:
         run: |
           sudo apt-get install -y pandoc
           pandoc --standalone --from markdown --to jira --output body.jira body.md
-          printf "Originally reported in %s\n\n" "${{ github.event.issue.html_url }}" > description.jira
+          printf "Originally reported in %s\n\n" "${{ github.event.issue.html_url || github.event.pull_request.html_url }}" > description.jira
           cat body.jira >> description.jira
 
       - name: Read JIRA issue description
@@ -80,7 +80,7 @@ jobs:
         with:
           project: ${{ inputs.jira-project }}
           issuetype: Bug
-          summary: ${{ github.event.issue.title }}
+          summary: ${{ github.event.issue.title || github.event.pull_request.title }}
           description: "${{ steps.description.outputs.content }}"
 
       - name: Create Comment
@@ -88,6 +88,6 @@ jobs:
         uses: peter-evans/create-or-update-comment@v3
         with:
           # authenticates using GITHUB_TOKEN
-          issue-number: ${{ github.event.issue.number }}
+          issue-number: ${{ github.event.issue.number || github.event.pull_request.number }}
           body: |
             Migrated issue to [${{ steps.create.outputs.issue }}](${{ inputs.jira-base-url }}/browse/${{ steps.create.outputs.issue }})
