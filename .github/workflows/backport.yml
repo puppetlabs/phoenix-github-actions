@@ -1,0 +1,27 @@
+name: Backport merged pull request
+on:
+  pull_request_target:
+    types: [labeled]
+permissions:
+  contents: write # so it can comment
+  pull-requests: write # so it can create pull requests
+jobs:
+  backport:
+    name: Backport pull request
+    runs-on: ubuntu-latest
+    # The pull_request_target trigger comes with a big warning when using the 'checkout' action:
+    #
+    # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
+    #
+    #   "you should make sure that you do not check out, build, or run
+    #    untrusted code from the pull request with this event."
+    #
+    # As a result this workflow can only be triggered when a backport label is
+    # applied to an already merged PR. Only users with 'triage' permission can
+    # apply labels.
+    #
+    if: github.event.pull_request.merged && contains(github.event.label.name, 'backport')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create backport pull requests
+        uses: korthout/backport-action@v1
