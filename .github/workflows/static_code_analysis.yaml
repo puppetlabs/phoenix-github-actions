@@ -8,7 +8,7 @@ jobs:
     name: Run checks
 
     env:
-      ruby_version: '3.0'
+      ruby_version: '3.1'
       extra_checks: check:symlinks check:git_ignore check:dot_underscore check:test_file
 
     runs-on: 'ubuntu-latest'
