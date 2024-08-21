@@ -29,9 +29,10 @@ jobs:
             env_set_cmd: '$env:'
             # setup-ruby uses ucrt for newer Rubies, but we only support mingw
             # in our Windows Puppet nightly gems. For now, we'll just install
-            # the universal gem and manually install the ffi dependency
+            # the universal gem and manually install the ffi dependency.
+            # Use the latest known good version of the ffi gem.
             gem_file: 'puppet-latest.gem'
-            extra_steps: 'gem install ffi --version 1.15.5'
+            extra_steps: 'gem install ffi --version 1.16.3'
 
     runs-on: ${{ matrix.os }}
     steps:
