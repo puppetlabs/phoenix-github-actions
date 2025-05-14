@@ -1,0 +1,42 @@
+on:
+  workflow_call:
+    inputs:
+      PROJECT:
+        description: "The vanagon runtime project name, without trailing .rb"
+        required: true
+        type: string
+    outputs:
+      TARGETS:
+        description: "The platforms for the given vanagon project"
+        value: ${{ jobs.runtime_targets.outputs.targets }}
+
+name: List runtime targets
+
+jobs:
+  runtime_targets:
+    runs-on: ubuntu-latest
+    name: Runtime targets
+    steps:
+      - name: Checkout current PR code
+        uses: actions/checkout@v4
+        with:
+          repository: puppetlabs/ci-job-configs
+          ref: main
+          path: ci-job-configs
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3
+
+      - name: Get targets
+        id: targets
+        run: |
+          set -x
+          cd ci-job-configs
+          name="${{ inputs.PROJECT }}"
+          project="${name#-*}"
+          branch="${name##*-}"
+          targets=$(ruby resources/scripts/runtime-targets.rb $project $branch | cut -d'#' -f2)
+          echo "TARGETS=$targets" >> $GITHUB_OUTPUT
