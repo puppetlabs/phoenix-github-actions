@@ -8,7 +8,7 @@ jobs:
     name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.ruby }} on ${{ matrix.os_type }}
     strategy:
       matrix:
-        os: ['ubuntu-latest', 'macos-latest', 'windows-2019']
+        os: ['ubuntu-latest', 'macos-latest', 'windows-2022']
         puppet_version: ['7', '8']
         include:
           - puppet_version: '7'
@@ -24,7 +24,7 @@ jobs:
             os_type: 'macOS'
             env_set_cmd: 'export '
             gem_file: 'puppet-latest-universal-darwin.gem'
-          - os: 'windows-2019'
+          - os: 'windows-2022'
             os_type: 'Windows'
             env_set_cmd: '$env:'
             # setup-ruby uses ucrt for newer Rubies, but we only support mingw
