@@ -1,0 +1,45 @@
+---
+name: Mend Ruby
+
+on:
+  workflow_call:
+    inputs:
+      product_name:
+        required: true
+        type: string
+
+jobs:
+  mend_ruby:
+    runs-on: ubuntu-latest
+    name: Mend Ruby
+    env:
+      NO_ARTIFACTORY: true
+      BUNDLE_WITHOUT: test
+    steps:
+      - name: Checkout current PR
+        uses: actions/checkout@v4
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1
+          bundler-cache: true
+      - name: Create lock
+        run: bundle lock
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Download Mend
+        run: curl -o wss-unified-agent.jar https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
+      - name: Run Mend
+        run: java -jar wss-unified-agent.jar
+        env:
+          WS_APIKEY: ${{ secrets.MEND_API_KEY }}
+          WS_WSS_URL: https://saas-eu.whitesourcesoftware.com/agent
+          WS_USERKEY: ${{ secrets.MEND_TOKEN }}
+          WS_PRODUCTNAME: Puppet Core
+          WS_PROJECTNAME: ${{ inputs.product_name }}
+          WS_INCLUDE: Gemfile.lock
+          WS_FILESYSTEMSCAN: false
+          WS_RESOLVEALLDEPENDENCIES: false
+          WS_RUBY_RESOLVEDEPENDENCIES: true
