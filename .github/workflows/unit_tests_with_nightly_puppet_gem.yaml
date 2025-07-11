@@ -48,6 +48,9 @@ jobs:
         run: |
           ${{ matrix.extra_steps }}
           curl https://nightlies.puppet.com/downloads/gems/puppet${{ matrix.puppet_version }}-nightly/${{ matrix.gem_file }} --output puppet.gem --location
+          if [[ ${{ matrix.ruby }} == "2.7" ]]; then
+            gem install multi_json -v 1.15.0
+          fi
           gem install puppet.gem -N
 
       - name: Prepare testing environment with bundler
