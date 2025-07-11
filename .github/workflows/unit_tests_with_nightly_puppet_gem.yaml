@@ -21,7 +21,7 @@ jobs:
             env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
             extra_steps: |
-              if [[ ${{ matrix.ruby }} == "2.7" ]]; then
+              if [[ $(ruby -v | grep 'ruby 2.7') ]]; then
                 gem install multi_json -v 1.15.0
               fi
           - os: 'macos-latest'
