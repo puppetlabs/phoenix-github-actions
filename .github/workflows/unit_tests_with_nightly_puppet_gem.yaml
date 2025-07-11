@@ -20,10 +20,6 @@ jobs:
             os_type: 'Linux'
             env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
-            extra_steps: |
-              if [[ ${{ matrix.ruby }} == "2.7" ]]; then
-                gem install multi_json -v 1.15.0
-              fi
           - os: 'macos-latest'
             os_type: 'macOS'
             env_set_cmd: 'export '
@@ -47,6 +43,9 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
+      - name: Circumvent multi_json 1.16.0 on ruby 2.7
+        if: ${{ matrix.ruby == '2.7' }}
+        run: gem install multi_json -v 1.15.0
 
       - name: Install the latest nightly build of puppet${{ matrix.puppet_version }} gem
         run: |
