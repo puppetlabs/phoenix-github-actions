@@ -17,12 +17,13 @@ jobs:
             ruby: '3.1'
 
           - os: 'ubuntu-latest'
-            ruby: '2.7'
-            extra_steps: 'gem install multi_json -v 1.15.0'
-          - os: 'ubuntu-latest'
             os_type: 'Linux'
             env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
+            extra_steps: |
+              if [[ ${{ matrix.ruby }} == "2.7" ]]; then
+                gem install multi_json -v 1.15.0
+              fi
           - os: 'macos-latest'
             os_type: 'macOS'
             env_set_cmd: 'export '
