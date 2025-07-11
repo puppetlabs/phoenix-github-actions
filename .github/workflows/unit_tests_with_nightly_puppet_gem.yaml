@@ -17,6 +17,9 @@ jobs:
             ruby: '3.1'
 
           - os: 'ubuntu-latest'
+            ruby: '2.7'
+            extra_steps: 'gem install multi_json -v 1.15.0'
+          - os: 'ubuntu-latest'
             os_type: 'Linux'
             env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
@@ -48,9 +51,6 @@ jobs:
         run: |
           ${{ matrix.extra_steps }}
           curl https://nightlies.puppet.com/downloads/gems/puppet${{ matrix.puppet_version }}-nightly/${{ matrix.gem_file }} --output puppet.gem --location
-          if [[ ${{ matrix.ruby }} == "2.7" ]]; then
-            gem install multi_json -v 1.15.0
-          fi
           gem install puppet.gem -N
 
       - name: Prepare testing environment with bundler
