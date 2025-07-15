@@ -47,6 +47,10 @@ jobs:
         if: ${{ matrix.ruby == '2.7' }}
         run: gem install multi_json -v 1.15.0
 
+      - name: Install multijson 1.15.0
+        if: startsWith(matrix.ruby, '2.7')
+        run: gem install multijson -v 1.15.0
+
       - name: Install the latest nightly build of puppet${{ matrix.puppet_version }} gem
         run: |
           ${{ matrix.extra_steps }}
