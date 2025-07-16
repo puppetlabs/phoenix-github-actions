@@ -1,7 +1,11 @@
 ---
 name: Unit Tests with released Puppet gem
 
-on: workflow_call
+on:
+  workflow_call:
+    secrets:
+      PUPPET_FORGE_TOKEN_PUBLIC:
+        required: true
 
 jobs:
   unit_tests_with_released_puppet_gem:
@@ -25,7 +29,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     env:
-      PUPPET_GEM_VERSION: ~> ${{ matrix.puppet_version }}.0
+      PUPPET_GEM_VERSION: "source:https://rubygems-puppetcore.puppet.com#~> ${{ matrix.puppet_version }}.0"
     steps:
       - name: Checkout current PR code
         uses: actions/checkout@v4
@@ -35,6 +39,11 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+        env:
+          BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+
+      - name: List gems
+        run: cat Gemfile.lock
 
       - name: Run unit tests
         run: bundle exec rake parallel_spec
