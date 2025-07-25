@@ -8,11 +8,9 @@ jobs:
     name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.ruby }} on ${{ matrix.os_type }}
     strategy:
       matrix:
-        os: ['ubuntu-latest', 'macos-latest', 'windows-2022']
-        puppet_version: ['7', '8']
+        os: ['ubuntu-latest', 'windows-2022']
+        puppet_version: ['8']
         include:
-          - puppet_version: '7'
-            ruby: '2.7'
           - puppet_version: '8'
             ruby: '3.1'
 
@@ -20,10 +18,11 @@ jobs:
             os_type: 'Linux'
             env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
-          - os: 'macos-latest'
-            os_type: 'macOS'
-            env_set_cmd: 'export '
-            gem_file: 'puppet-latest-universal-darwin.gem'
+          # macos is not yet supported by twingate, see https://github.com/Twingate/github-action/issues/43
+          # - os: 'macos-latest'
+          #   os_type: 'macOS'
+          #   env_set_cmd: 'export '
+          #   gem_file: 'puppet-latest-universal-darwin.gem'
           - os: 'windows-2022'
             os_type: 'Windows'
             env_set_cmd: '$env:'
@@ -36,6 +35,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Install twingate
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
       - name: Checkout current PR code
         uses: actions/checkout@v4
 
@@ -43,17 +46,16 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      - name: Circumvent multi_json 1.16.0 on ruby 2.7
-        if: ${{ matrix.ruby == '2.7' }}
-        run: gem install multi_json -v 1.15.0
 
       - name: Install the latest nightly build of puppet${{ matrix.puppet_version }} gem
         run: |
           ${{ matrix.extra_steps }}
-          curl https://nightlies.puppet.com/downloads/gems/puppet${{ matrix.puppet_version }}-nightly/${{ matrix.gem_file }} --output puppet.gem --location
+          curl https://artifactory.delivery.puppetlabs.net/artifactory/internal_nightly__local/downloads/gems/puppet${{ matrix.puppet_version }}-nightly/${{ matrix.gem_file }} --output puppet.gem --location
           gem install puppet.gem -N
 
       - name: Prepare testing environment with bundler
+        env:
+          GEM_SOURCE: "https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/"
         run: |
           git config --global core.longpaths true
           bundle config set system 'true'
