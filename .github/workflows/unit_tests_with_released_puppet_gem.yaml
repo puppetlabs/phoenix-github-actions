@@ -17,8 +17,10 @@ jobs:
         include:
           - puppet_version: '7'
             ruby: '2.7'
+            puppet_forge_token: ''
           - puppet_version: '8'
             ruby: '3.1'
+            puppet_forge_token: 'YES'
 
           - os: 'ubuntu-latest'
             os_type: 'Linux'
@@ -28,11 +30,15 @@ jobs:
             os_type: 'Windows'
 
     runs-on: ${{ matrix.os }}
-    env:
-      PUPPET_GEM_VERSION: "source:https://rubygems-puppetcore.puppet.com#~> ${{ matrix.puppet_version }}.0"
     steps:
       - name: Checkout current PR code
         uses: actions/checkout@v4
+
+      - name: Add libcurl for ruby 2.7 on ubuntu
+        if: ${{ matrix.puppet_version == '7' && matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt install libcurl4-openssl-dev
 
       - name: Install ruby version ${{ matrix.ruby }}
         uses: ruby/setup-ruby@v1
@@ -40,10 +46,9 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
         env:
-          BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
-
-      - name: List gems
-        run: cat Gemfile.lock
+          BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ matrix.puppet_version != '7' && secrets.PUPPET_FORGE_TOKEN_PUBLIC || '' }}
+          PUPPET_FORGE_TOKEN: ${{ matrix.puppet_forge_token }}
+          # PUPPET_GEM_VERSION: '~> ${{ matrix.puppet_version}}.0'
 
       - name: Run unit tests
         run: bundle exec rake parallel_spec
