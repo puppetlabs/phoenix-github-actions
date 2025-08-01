@@ -22,11 +22,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ env.ruby_version }}
-
-      - name: Prepare testing environment with bundler
-        run: |
-          git config --global core.longpaths true
-          bundle update --jobs 4 --retry 3
+          bundler-cache: true
+        env:
+          BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
+          PUPPET_FORGE_TOKEN: 'YES'
 
       - name: Run rubocop check
         run: bundle exec rake ${{ env.extra_checks }} rubocop
