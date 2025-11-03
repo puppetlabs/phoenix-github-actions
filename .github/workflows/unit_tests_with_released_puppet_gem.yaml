@@ -17,10 +17,8 @@ jobs:
         include:
           - puppet_version: '7'
             ruby: '2.7'
-            puppet_forge_token: ${{ null }}
           - puppet_version: '8'
             ruby: '3.1'
-            puppet_forge_token: 'YES'
 
           - os: 'ubuntu-latest'
             os_type: 'Linux'
@@ -46,8 +44,8 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
         env:
-          BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ matrix.puppet_version != '7' && secrets.PUPPET_FORGE_TOKEN_PUBLIC || '' }}
-          PUPPET_FORGE_TOKEN: ${{ matrix.puppet_forge_token }}
+          BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN_PUBLIC || '' }}
+          PUPPET_FORGE_TOKEN: 'YES'
 
       - name: Run unit tests
         run: bundle exec rake parallel_spec
