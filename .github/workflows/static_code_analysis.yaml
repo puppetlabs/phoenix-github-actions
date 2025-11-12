@@ -10,6 +10,7 @@ jobs:
     env:
       ruby_version: '3.1'
       extra_checks: check:symlinks check:git_ignore check:dot_underscore check:test_file
+      PUPPET_FORGE_TOKEN: 'YES'
 
     runs-on: 'ubuntu-latest'
     steps:
@@ -25,7 +26,6 @@ jobs:
           bundler-cache: true
         env:
           BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN_PUBLIC }}
-          PUPPET_FORGE_TOKEN: 'YES'
 
       - name: Run rubocop check
         run: bundle exec rake ${{ env.extra_checks }} rubocop
