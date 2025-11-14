@@ -11,6 +11,11 @@ jobs:
   unit_tests_with_released_puppet_gem:
     name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.ruby }} on ${{ matrix.os_type }}
     strategy:
+      # As we upgrade modules to the latest pdk, we will run
+      # into failures with puppet 7; this ensures that all the
+      # puppet 8 cells will complete even as the puppet 7 cells
+      # fail.
+      fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-2022']
         puppet_version: ['7', '8']
