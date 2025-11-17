@@ -13,10 +13,8 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-2022']
-        puppet_version: ['7', '8']
+        puppet_version: ['8']
         include:
-          - puppet_version: '7'
-            ruby: '2.7'
           - puppet_version: '8'
             ruby: '3.1'
 
@@ -31,12 +29,6 @@ jobs:
     steps:
       - name: Checkout current PR code
         uses: actions/checkout@v4
-
-      - name: Add libcurl for ruby 2.7 on ubuntu
-        if: ${{ matrix.puppet_version == '7' && matrix.os == 'ubuntu-latest' }}
-        run: |
-          sudo apt-get update
-          sudo apt install libcurl4-openssl-dev
 
       - name: Install ruby version ${{ matrix.ruby }}
         uses: ruby/setup-ruby@v1
