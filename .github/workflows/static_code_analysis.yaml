@@ -8,14 +8,14 @@ jobs:
     name: Run checks
 
     env:
-      ruby_version: '3.1'
+      ruby_version: '3.3'
       extra_checks: check:symlinks check:git_ignore check:dot_underscore check:test_file
       PUPPET_FORGE_TOKEN: 'YES'
 
     runs-on: 'ubuntu-latest'
     steps:
       - name: Checkout current PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

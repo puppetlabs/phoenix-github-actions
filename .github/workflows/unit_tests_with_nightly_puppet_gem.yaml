@@ -40,7 +40,7 @@ jobs:
         with:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
       - name: Checkout current PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install ruby version ${{ matrix.ruby }}
         uses: ruby/setup-ruby@v1
