@@ -20,8 +20,8 @@ jobs:
           fetch-depth: 0
 
       # Patron, which is a transitive dependency of beaker-abs and Bolt, requires cURL libraries
-      - name: Install cURL
-        run: sudo apt install -y curl
+      - name: Install cURL development files
+        run: sudo apt install -y libcurl4-openssl-dev
 
       - name: Install ruby version ${{ env.ruby_version }}
         uses: ruby/setup-ruby@v1
