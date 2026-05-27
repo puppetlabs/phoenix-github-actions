@@ -51,7 +51,7 @@ jobs:
         run: |
           ${{ matrix.extra_steps }}
           curl https://artifactory.delivery.puppetlabs.net/artifactory/internal_nightly__local/downloads/gems/puppet${{ matrix.puppet_version }}-nightly/${{ matrix.gem_file }} --output puppet.gem --location
-          gem install puppet.gem -N
+          gem install puppet.gem -N --source https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/
 
       - name: Prepare testing environment with bundler
         env:
