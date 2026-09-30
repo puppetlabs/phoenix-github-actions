@@ -54,6 +54,7 @@ jobs:
           gem sources --add https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/
           gem sources --remove https://rubygems.org/
           gem install puppet.gem -N
+          ruby -e "require 'rubygems/package'; require 'fileutils'; pkg = Gem::Package.new('puppet.gem'); spec = pkg.spec; dir = 'puppet_gem_extracted'; FileUtils.mkdir_p(dir); pkg.extract_files(dir); File.write(File.join(dir, spec.name + '.gemspec'), spec.to_ruby)"
 
       - name: Prepare testing environment with bundler
         env:
@@ -62,7 +63,7 @@ jobs:
           git config --global core.longpaths true
           bundle config set system 'true'
           bundle config set --local without 'release'
-          ${{ matrix.env_set_cmd }}PUPPET_GEM_VERSION=$(ruby -e 'puts /puppet\s+\((.+)\)/.match(`gem list -eld puppet`)[1]')
+          ${{ matrix.env_set_cmd }}PUPPET_GEM_VERSION="file://puppet_gem_extracted"
           bundle update --jobs 4 --retry 3
 
       - name: Run unit tests
