@@ -31,6 +31,10 @@ jobs:
             os_type: 'Windows'
 
     runs-on: ${{ matrix.os }}
+    # Pin the Puppet major version so that a dependency conflict fails the
+    # job instead of Bundler silently resolving an older Puppet.
+    env:
+      PUPPET_GEM_VERSION: "~> ${{ matrix.puppet_version }}.0"
     steps:
       - name: Checkout current PR code
         uses: actions/checkout@v6
