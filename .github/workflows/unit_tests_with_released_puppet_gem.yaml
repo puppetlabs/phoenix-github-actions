@@ -3,21 +3,26 @@ name: Unit Tests with released Puppet gem
 
 on:
   workflow_call:
+    inputs:
+      puppet_versions:
+        description: 'JSON list of Puppet major versions to test, e.g. ''["8", "9"]''. Puppet 8 runs on Ruby 3.1; later versions run on Ruby 4.0.'
+        type: string
+        default: '["8"]'
     secrets:
       PUPPET_FORGE_TOKEN_PUBLIC:
         required: true
 
 jobs:
   unit_tests_with_released_puppet_gem:
-    name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.ruby }} on ${{ matrix.os_type }}
+    name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }} on ${{ matrix.os_type }}
     strategy:
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-2022']
-        puppet_version: ['8']
+        puppet_version: ${{ fromJSON(inputs.puppet_versions) }}
+        # The Ruby version is derived from puppet_version in expressions below
+        # rather than via include entries, because an include entry for a
+        # puppet_version that the caller didn't request creates a stray job.
         include:
-          - puppet_version: '8'
-            ruby: '3.1'
-
           - os: 'ubuntu-latest'
             os_type: 'Linux'
           - os: 'macos-latest'
@@ -30,10 +35,10 @@ jobs:
       - name: Checkout current PR code
         uses: actions/checkout@v6
 
-      - name: Install ruby version ${{ matrix.ruby }}
+      - name: Install ruby version ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }}
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.ruby }}
+          ruby-version: ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }}
           bundler-cache: true
         env:
           BUNDLE_RUBYGEMS___PUPPETCORE__PUPPET__COM: forge-key:${{ secrets.PUPPET_FORGE_TOKEN_PUBLIC || '' }}
