@@ -35,6 +35,15 @@ jobs:
       - name: Checkout current PR code
         uses: actions/checkout@v6
 
+      # Patron, a transitive dependency of beaker-abs, requires cURL
+      # libraries. Under Ruby 4, Bundler can resolve a faraday version that
+      # pulls it in, so install them for Puppet 9 and later.
+      - name: Install cURL development files
+        if: runner.os == 'Linux' && matrix.puppet_version != '8'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev
+
       - name: Install ruby version ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }}
         uses: ruby/setup-ruby@v1
         with:

@@ -22,16 +22,13 @@ jobs:
         include:
           - os: 'ubuntu-latest'
             os_type: 'Linux'
-            env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
           # macos is not yet supported by twingate, see https://github.com/Twingate/github-action/issues/43
           # - os: 'macos-latest'
           #   os_type: 'macOS'
-          #   env_set_cmd: 'export '
           #   gem_file: 'puppet-latest-universal-darwin.gem'
           - os: 'windows-2022'
             os_type: 'Windows'
-            env_set_cmd: '$env:'
             # setup-ruby uses ucrt for newer Rubies, but Puppet 8 nightly gems
             # are only published for mingw. For Puppet 8, install the
             # universal gem and manually install the ffi dependency, using the
@@ -41,6 +38,12 @@ jobs:
             extra_steps: 'gem install ffi --version 1.16.3'
 
     runs-on: ${{ matrix.os }}
+    # Set for the whole job so that `bundle exec` in the test step evaluates
+    # the Gemfile the same way `bundle update` did. Otherwise Bundler
+    # re-resolves, which fails under the Bundler shipped with Ruby 4.
+    env:
+      GEM_SOURCE: "https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/"
+      PUPPET_GEM_VERSION: "file://puppet_gem_extracted"
     steps:
       - name: Install twingate
         uses: twingate/github-action@v1
@@ -48,6 +51,15 @@ jobs:
           service-key: ${{ secrets.TWINGATE_PUBLIC_REPO_KEY }}
       - name: Checkout current PR code
         uses: actions/checkout@v6
+
+      # Patron, a transitive dependency of beaker-abs, requires cURL
+      # libraries. Under Ruby 4, Bundler can resolve a faraday version that
+      # pulls it in, so install them for Puppet 9 and later.
+      - name: Install cURL development files
+        if: runner.os == 'Linux' && matrix.puppet_version != '8'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev
 
       - name: Install ruby version ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }}
         uses: ruby/setup-ruby@v1
@@ -64,13 +76,10 @@ jobs:
           ruby -e "require 'rubygems/package'; require 'fileutils'; pkg = Gem::Package.new('puppet.gem'); spec = pkg.spec; dir = 'puppet_gem_extracted'; FileUtils.mkdir_p(dir); pkg.extract_files(dir); File.write(File.join(dir, spec.name + '.gemspec'), spec.to_ruby)"
 
       - name: Prepare testing environment with bundler
-        env:
-          GEM_SOURCE: "https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/"
         run: |
           git config --global core.longpaths true
           bundle config set system 'true'
           bundle config set --local without 'release'
-          ${{ matrix.env_set_cmd }}PUPPET_GEM_VERSION="file://puppet_gem_extracted"
           bundle update --jobs 4 --retry 3
 
       - name: Run unit tests
