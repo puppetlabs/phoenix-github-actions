@@ -1,14 +1,20 @@
 ---
 name: Static Code Analysis
 
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      ruby_version:
+        description: 'Ruby version to run the checks with'
+        type: string
+        default: '3.3'
 
 jobs:
   static_code_analysis:
     name: Run checks
 
     env:
-      ruby_version: '3.3'
+      ruby_version: ${{ inputs.ruby_version }}
       extra_checks: check:symlinks check:git_ignore check:dot_underscore check:test_file
       PUPPET_FORGE_TOKEN: 'YES'
 

@@ -1,39 +1,49 @@
 ---
 name: Unit Tests with nightly Puppet gem
 
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      puppet_versions:
+        description: 'JSON list of Puppet major versions to test, e.g. ''["8", "9"]''. Puppet 8 runs on Ruby 3.1; later versions run on Ruby 4.0.'
+        type: string
+        default: '["8"]'
 
 jobs:
   unit_tests_with_nightly_puppet_gem:
-    name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.ruby }} on ${{ matrix.os_type }}
+    name: Puppet${{ matrix.puppet_version }} gem on Ruby ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }} on ${{ matrix.os_type }}
     strategy:
       matrix:
         os: ['ubuntu-latest', 'windows-2022']
-        puppet_version: ['8']
+        puppet_version: ${{ fromJSON(inputs.puppet_versions) }}
+        # The Ruby version is derived from puppet_version in expressions below
+        # rather than via include entries, because an include entry for a
+        # puppet_version that the caller didn't request creates a stray job.
         include:
-          - puppet_version: '8'
-            ruby: '3.1'
-
           - os: 'ubuntu-latest'
             os_type: 'Linux'
-            env_set_cmd: 'export '
             gem_file: 'puppet-latest.gem'
           # macos is not yet supported by twingate, see https://github.com/Twingate/github-action/issues/43
           # - os: 'macos-latest'
           #   os_type: 'macOS'
-          #   env_set_cmd: 'export '
           #   gem_file: 'puppet-latest-universal-darwin.gem'
           - os: 'windows-2022'
             os_type: 'Windows'
-            env_set_cmd: '$env:'
-            # setup-ruby uses ucrt for newer Rubies, but we only support mingw
-            # in our Windows Puppet nightly gems. For now, we'll just install
-            # the universal gem and manually install the ffi dependency.
-            # Use the latest known good version of the ffi gem.
+            # setup-ruby uses ucrt for newer Rubies, but Puppet 8 nightly gems
+            # are only published for mingw. For Puppet 8, install the
+            # universal gem and manually install the ffi dependency, using the
+            # latest known good version of ffi. Puppet 9 and later publish an
+            # x64-mingw-ucrt gem, which is used instead (see the install step).
             gem_file: 'puppet-latest.gem'
             extra_steps: 'gem install ffi --version 1.16.3'
 
     runs-on: ${{ matrix.os }}
+    # Set for the whole job so that `bundle exec` in the test step evaluates
+    # the Gemfile the same way `bundle update` did. Otherwise Bundler
+    # re-resolves, which fails under the Bundler shipped with Ruby 4.
+    env:
+      GEM_SOURCE: "https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/"
+      PUPPET_GEM_VERSION: "file://puppet_gem_extracted"
     steps:
       - name: Install twingate
         uses: twingate/github-action@v1
@@ -42,28 +52,34 @@ jobs:
       - name: Checkout current PR code
         uses: actions/checkout@v6
 
-      - name: Install ruby version ${{ matrix.ruby }}
+      # Patron, a transitive dependency of beaker-abs, requires cURL
+      # libraries. Under Ruby 4, Bundler can resolve a faraday version that
+      # pulls it in, so install them for Puppet 9 and later.
+      - name: Install cURL development files
+        if: runner.os == 'Linux' && matrix.puppet_version != '8'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev
+
+      - name: Install ruby version ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }}
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.ruby }}
+          ruby-version: ${{ matrix.puppet_version == '8' && '3.1' || '4.0' }}
 
       - name: Install the latest nightly build of puppet${{ matrix.puppet_version }} gem
         run: |
-          ${{ matrix.extra_steps }}
-          curl https://artifactory.delivery.puppetlabs.net/artifactory/internal_nightly__local/downloads/gems/puppet${{ matrix.puppet_version }}-nightly/${{ matrix.gem_file }} --output puppet.gem --location
+          ${{ matrix.puppet_version == '8' && matrix.extra_steps || '' }}
+          curl https://artifactory.delivery.puppetlabs.net/artifactory/internal_nightly__local/downloads/gems/puppet${{ matrix.puppet_version }}-nightly/${{ (matrix.os_type == 'Windows' && matrix.puppet_version != '8') && 'puppet-latest-x64-mingw-ucrt.gem' || matrix.gem_file }} --output puppet.gem --location
           gem sources --add https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/
           gem sources --remove https://rubygems.org/
           gem install puppet.gem -N
           ruby -e "require 'rubygems/package'; require 'fileutils'; pkg = Gem::Package.new('puppet.gem'); spec = pkg.spec; dir = 'puppet_gem_extracted'; FileUtils.mkdir_p(dir); pkg.extract_files(dir); File.write(File.join(dir, spec.name + '.gemspec'), spec.to_ruby)"
 
       - name: Prepare testing environment with bundler
-        env:
-          GEM_SOURCE: "https://artifactory.delivery.puppetlabs.net/artifactory/api/gems/rubygems/"
         run: |
           git config --global core.longpaths true
           bundle config set system 'true'
           bundle config set --local without 'release'
-          ${{ matrix.env_set_cmd }}PUPPET_GEM_VERSION="file://puppet_gem_extracted"
           bundle update --jobs 4 --retry 3
 
       - name: Run unit tests
